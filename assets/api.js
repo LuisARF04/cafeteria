@@ -100,6 +100,7 @@ window.api = (function () {
     addMudo: (tabla, filas) => req('POST', tabla, filas, 'return=minimal'),
     upsert: (tabla, filas) => req('POST', tabla, filas, 'resolution=merge-duplicates,return=representation'),
     patch: (ruta, campos) => req('PATCH', ruta, campos, 'return=minimal'),
-    del: ruta => req('DELETE', ruta)
+    del: ruta => req('DELETE', ruta),
+    rpc: (fn, args) => req('POST', 'rpc/' + fn, args || {})
   };
 })();

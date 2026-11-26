@@ -38,6 +38,8 @@
   <div id="carta"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
 </main>
 
+<div class="track hide" id="track" role="status" aria-live="polite"></div>
+
 <div class="bar" id="bar">
   <button onclick="verPedido()">
     <span class="n">🛒<b id="cnt">0</b></span>
@@ -239,7 +241,50 @@ function pintaBarra(){
   document.getElementById('bar').classList.toggle('up',n>0);
   document.getElementById('cnt').textContent=n;
   document.getElementById('barTot').textContent=cup(total());
+  document.getElementById('track').classList.toggle('conbarra',n>0);
 }
+
+/* ═══════════ SEGUIMIENTO DEL PEDIDO ═══════════
+   El cliente no puede leer la tabla de pedidos: pregunta por el suyo
+   con su identificador aleatorio, que solo está en su teléfono. */
+const PASOS=['nuevo','preparando','listo','entregado'];
+const TEXTO={
+  nuevo:      ['Pedido recibido','La cocina ya lo tiene en la lista.'],
+  preparando: ['Preparando tu pedido','Lo están haciendo ahora mismo.'],
+  listo:      ['¡Tu pedido está listo!','Enseguida te lo llevan a la mesa.'],
+  entregado:  ['Entregado','Que lo disfrutes.']
+};
+let ultimoEstado=cache.get('ult_estado',null);
+let sigueActivo=true;
+
+async function mirarPedido(){
+  if(!sigueActivo||!navigator.onLine)return;
+  let lista;
+  try{lista=await api.rpc('mis_pedidos',{p_uid:UID})}catch(e){return}
+  const vivo=(lista||[]).find(p=>p.estado!=='entregado')||(lista||[])[0];
+  pintaSeguimiento(vivo);
+}
+function pintaSeguimiento(p){
+  const t=document.getElementById('track');
+  if(!p){t.classList.add('hide');return}
+  const viejo=(Date.now()-new Date(p.creado).getTime())>90*60*1000;
+  if(p.estado==='entregado'&&viejo){t.classList.add('hide');sigueActivo=false;return}
+
+  const i=PASOS.indexOf(p.estado), [titulo,nota]=TEXTO[p.estado]||TEXTO.nuevo;
+  const hora=new Date(p.creado).toLocaleTimeString('es-CU',{hour:'2-digit',minute:'2-digit'});
+  t.className='track'+(p.estado==='listo'?' listo':'')+(nItems()>0?' conbarra':'');
+  t.innerHTML='<div class="tkh"><em>'+titulo+'</em><span>Mesa '+esc(p.mesa)+' · '+hora+'</span></div>'+
+    '<div class="tkp">'+PASOS.map((_,k)=>'<i class="'+(k<=i?'on':'')+'"></i>').join('')+'</div>'+
+    '<div class="tkn">'+nota+'</div>';
+
+  if(p.estado!==ultimoEstado){
+    if(ultimoEstado&&p.estado==='listo'&&navigator.vibrate)navigator.vibrate([90,70,90]);
+    ultimoEstado=p.estado;cache.set('ult_estado',p.estado);
+  }
+  if(p.estado==='entregado')setTimeout(()=>{sigueActivo=false},60000);
+}
+setInterval(mirarPedido,20000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')mirarPedido()});
 
 /* ═══════════ PEDIDO ═══════════ */
 const abrir=id=>document.getElementById(id).classList.remove('hide');
@@ -394,6 +439,8 @@ async function enviar(){
 function limpiar(){
   cart={mesa:MESA,items:[]};guardaCart();cuentas=[];units=[];sel=null;
   cerrar('scrSplit');cerrar('scrCart');pintaBarra();
+  sigueActivo=true;ultimoEstado=null;cache.del('ult_estado');
+  setTimeout(mirarPedido,1200);
 }
 function exito(p,enCola){
   const d=document.createElement('div');d.className='done'+(enCola?' q':'');
@@ -401,7 +448,7 @@ function exito(p,enCola){
    '<h2>'+(enCola?'Pedido en espera':'Pedido enviado')+'</h2>'+
    '<p>Mesa '+esc(p.mesa)+' · '+cup(p.total)+'<br>'+
    (enCola?'No hay conexión ahora mismo. Se envía solo en cuanto vuelva — puedes cerrar la página.'
-          :'Ya lo está viendo la cocina.')+'</p>'+
+          :'Abajo verás cómo va: recibido, preparando y listo.')+'</p>'+
    '<button class="b pri" style="max-width:280px;margin:0 auto">Hacer otro pedido</button></div>';
   d.querySelector('button').onclick=()=>d.remove();
   document.body.appendChild(d);
@@ -465,7 +512,7 @@ function toast(t){
   document.body.appendChild(d);setTimeout(()=>d.remove(),2800);
 }
 
-pintaTienda();pinta();cargar();red();vaciarCola();
+pintaTienda();pinta();cargar();red();vaciarCola();mirarPedido();
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')cargar()});
 setInterval(()=>{if(navigator.onLine&&document.visibilityState==='visible')cargar()},120000);
 </script>
