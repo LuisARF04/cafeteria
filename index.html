@@ -358,7 +358,8 @@ function pinta(){
     (!q||(p.nombre+' '+(p.descripcion||'')).toLowerCase().includes(q)));
   const cont=document.getElementById('carta');cont.innerHTML='';
   if(!vis.length){cont.innerHTML='<div class="vacio">'+(q?'Nada con «'+q+'».':'Esta sección está vacía por ahora.')+'</div>';pintaBarra();return}
-  const grupos=[...new Set(vis.map(p=>p.categoria))];
+  const presentes=[...new Set(vis.map(p=>p.categoria))];
+  const grupos=CATS.filter(c=>presentes.includes(c)).concat(presentes.filter(c=>!CATS.includes(c)));
   grupos.forEach(g=>{
     const s=document.createElement('section');s.className='sect';
     s.innerHTML='<h2>'+g+'</h2><div class="rule"></div>';
