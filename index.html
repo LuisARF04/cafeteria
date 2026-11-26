@@ -75,6 +75,11 @@
   </div>
 </div>
 
+<div class="scr hide" id="scrMios">
+  <div class="sbar"><button class="hbtn" onclick="cerrar('scrMios')" aria-label="Volver">←</button><h2>Mis pedidos</h2></div>
+  <div id="mios"></div>
+</div>
+
 <div id="capas"></div>
 
 <script src="assets/config.js"></script>
@@ -240,34 +245,74 @@ const TEXTO={
   listo:      ['¡Tu pedido está listo!','Enseguida te lo llevan a la mesa.'],
   entregado:  ['Entregado','Que lo disfrutes.']
 };
-let ultimoEstado=cache.get('ult_estado',null);
-let sigueActivo=true;
+let ultimoEstado=cache.get('ult_estado',{});
+let MIOS=cache.get('mios',[]);
+const hhmm=t=>new Date(t).toLocaleTimeString('es-CU',{hour:'2-digit',minute:'2-digit'});
+const activo=p=>p.estado!=='entregado';
 
 async function mirarPedido(){
-  if(!sigueActivo||!navigator.onLine)return;
-  let lista;
-  try{lista=await api.rpc('mis_pedidos',{p_uid:UID})}catch(e){return}
-  const vivo=(lista||[]).find(p=>p.estado!=='entregado')||(lista||[])[0];
-  pintaSeguimiento(vivo);
+  if(!navigator.onLine)return;
+  try{MIOS=await api.rpc('mis_pedidos',{p_uid:UID})||[]}catch(e){return}
+  cache.set('mios',MIOS);
+  avisaCambios();
+  pintaSeguimiento();
+  if(!document.getElementById('scrMios').classList.contains('hide'))pintaMios();
+  const n=MIOS.filter(activo).length;
+  const b=document.getElementById('mMios');
+  if(b)b.textContent=n?'🧾 Mis pedidos · '+n+' en curso':'🧾 Mis pedidos';
 }
-function pintaSeguimiento(p){
+function avisaCambios(){
+  let sonar=false;
+  MIOS.forEach(p=>{
+    const antes=ultimoEstado[p.id];
+    if(antes&&antes!==p.estado&&p.estado==='listo')sonar=true;
+    ultimoEstado[p.id]=p.estado;
+  });
+  cache.set('ult_estado',ultimoEstado);
+  if(sonar&&navigator.vibrate)navigator.vibrate([90,70,90]);
+}
+
+/* Barra de abajo: el pedido más reciente que siga en curso */
+function pintaSeguimiento(){
   const t=document.getElementById('track');
+  const vivos=MIOS.filter(activo);
+  const p=vivos[0]||MIOS.find(x=>Date.now()-new Date(x.creado).getTime()<20*60*1000);
   if(!p){t.classList.add('hide');return}
-  const viejo=(Date.now()-new Date(p.creado).getTime())>90*60*1000;
-  if(p.estado==='entregado'&&viejo){t.classList.add('hide');sigueActivo=false;return}
-
   const i=PASOS.indexOf(p.estado), [titulo,nota]=TEXTO[p.estado]||TEXTO.nuevo;
-  const hora=new Date(p.creado).toLocaleTimeString('es-CU',{hour:'2-digit',minute:'2-digit'});
+  const otros=vivos.length-1;
   t.className='track'+(p.estado==='listo'?' listo':'')+(nItems()>0?' conbarra':'');
-  t.innerHTML='<div class="tkh"><em>'+titulo+'</em><span>Mesa '+esc(p.mesa)+' · '+hora+'</span></div>'+
+  t.innerHTML='<div class="tkh"><em>'+titulo+'</em><span>Mesa '+esc(p.mesa)+' · '+hhmm(p.creado)+'</span></div>'+
     '<div class="tkp">'+PASOS.map((_,k)=>'<i class="'+(k<=i?'on':'')+'"></i>').join('')+'</div>'+
-    '<div class="tkn">'+nota+'</div>';
+    '<div class="tkn">'+nota+(otros>0?' · y '+otros+' pedido'+(otros>1?'s':'')+' más en curso':'')+
+    ' <u>Ver todos</u></div>';
+  t.onclick=verMios;
+}
 
-  if(p.estado!==ultimoEstado){
-    if(ultimoEstado&&p.estado==='listo'&&navigator.vibrate)navigator.vibrate([90,70,90]);
-    ultimoEstado=p.estado;cache.set('ult_estado',p.estado);
+/* Pantalla completa con todos los pedidos de esta mesa */
+function verMios(){abrir('scrMios');pintaMios();mirarPedido()}
+function pintaMios(){
+  const c=document.getElementById('mios');
+  if(!MIOS.length){
+    c.innerHTML='<div class="vacio">Todavía no has enviado ningún pedido.<br>'+
+      'Lo que pidas aparecerá aquí con su estado.</div>';
+    return;
   }
-  if(p.estado==='entregado')setTimeout(()=>{sigueActivo=false},60000);
+  c.innerHTML=MIOS.map(p=>{
+    const i=PASOS.indexOf(p.estado), [titulo,nota]=TEXTO[p.estado]||TEXTO.nuevo;
+    const lineas=(p.items||[]).map(it=>
+      '<div class="sum"><span>'+it.q+'× '+esc(it.n)+'</span><span>'+cup(it.q*it.p)+'</span></div>').join('');
+    const ctas=p.dividido?(p.cuentas||[]).map(ct=>
+      '<div class="sum" style="color:var(--ink);font-weight:600"><span>'+esc(ct.nombre)+'</span>'+
+      '<span>'+cup(ct.total)+'</span></div>').join(''):'';
+    return '<article class="mio'+(p.estado==='listo'?' listo':'')+'">'+
+      '<div class="mh"><b>'+titulo+'</b><span>'+hhmm(p.creado)+'</span></div>'+
+      '<div class="tkp">'+PASOS.map((_,k)=>'<i class="'+(k<=i?'on':'')+'"></i>').join('')+'</div>'+
+      '<div class="mn">'+nota+'</div>'+
+      '<div class="ml">'+lineas+
+        (ctas?'<div class="mdiv">Dividido en '+(p.cuentas||[]).length+' cuentas</div>'+ctas:'')+
+        '<div class="sum big" style="font-size:18px;padding-top:8px"><span>Total</span><span>'+
+        cup(p.total)+'</span></div></div></article>';
+  }).join('');
 }
 setInterval(mirarPedido,20000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')mirarPedido()});
@@ -425,7 +470,6 @@ async function enviar(){
 function limpiar(){
   cart={mesa:MESA,items:[]};guardaCart();cuentas=[];units=[];sel=null;
   cerrar('scrSplit');cerrar('scrCart');pintaBarra();
-  sigueActivo=true;ultimoEstado=null;cache.del('ult_estado');
   setTimeout(mirarPedido,1200);
 }
 function exito(p,enCola){
@@ -468,14 +512,17 @@ function menuLat(){
   const w=capa('<div class="ov" data-x></div><div class="draw">'+
    '<div class="dh"><b>'+esc(CFG.nombre)+'</b><div>Mesa '+esc(MESA)+'</div></div>'+
    '<button class="di" data-a="carta">📋 Ver la carta</button>'+
-   '<button class="di" data-a="cart">🛒 Mi pedido · '+nItems()+'</button>'+
+   '<button class="di" data-a="cart">🛒 Mi carrito'+(nItems()?' · '+nItems():'')+'</button>'+
+   '<button class="di" data-a="mios" id="mMios">🧾 Mis pedidos'+
+     (MIOS.filter(activo).length?' · '+MIOS.filter(activo).length+' en curso':'')+'</button>'+
    '<button class="di" data-a="help">💬 Ayuda y soporte</button>'+
    '<button class="di" data-a="info">📍 Dirección y contacto</button>'+
    '<a class="di last" href="admin.html">Soy trabajador</a></div>');
   w.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{
     const a=b.dataset.a;w.remove();
     if(a==='cart')verPedido(); if(a==='help')ayuda(); if(a==='info')info();
-    if(a==='carta'){cerrar('scrCart');cerrar('scrSplit')}
+    if(a==='mios')verMios();
+    if(a==='carta'){cerrar('scrCart');cerrar('scrSplit');cerrar('scrMios')}
   });
 }
 function ayuda(){
