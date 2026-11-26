@@ -1,0 +1,15 @@
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+*.swp
+
+# Copias de seguridad descargadas desde el panel
+cafeteria-*.json
+
+# Nunca subir claves secretas de Supabase
+.env
+.env.*
