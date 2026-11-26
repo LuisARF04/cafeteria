@@ -25,10 +25,8 @@
 <main>
   <div class="shop">
     <h1 id="sName">&nbsp;</h1>
-    <div class="meta"><span id="sHor"></span><br><span id="sDir"></span></div>
-    <span class="estado" id="sEst"></span>
+    <div class="meta"><span id="sDir"></span></div>
   </div>
-  <div class="aviso hide" id="sAviso"></div>
 
   <div class="tools">
     <div class="find"><span>⌕</span><input id="q" placeholder="Buscar café, batido…" oninput="pinta()" aria-label="Buscar en la carta"></div>
@@ -136,26 +134,14 @@ async function cargar(){
 }
 
 /* ═══════════ TIENDA ═══════════ */
-function abierto(){
-  if(CFG.forzarCerrado)return false;
-  if(!CFG.abre||!CFG.cierra)return true;
-  const d=new Date(),m=d.getHours()*60+d.getMinutes(),t=s=>{const[a,b]=s.split(':').map(Number);return a*60+b};
-  const A=t(CFG.abre),C=t(CFG.cierra);
-  return C>A?(m>=A&&m<C):(m>=A||m<C);
-}
+/* El horario y el aviso de cerrado están quitados a propósito,
+   pendientes de rehacer. Los datos siguen en la base y en el panel. */
 function pintaTienda(){
-  const ab=abierto();
   document.getElementById('hName').textContent=CFG.nombre;
   document.getElementById('mark').textContent=CFG.emoji||'☕';
   document.getElementById('hMesa').textContent='Estás en la Mesa '+MESA;
   document.getElementById('sName').textContent=CFG.nombre;
-  document.getElementById('sHor').textContent='Hoy '+(CFG.hora||'');
   document.getElementById('sDir').textContent=CFG.dir||'';
-  const e=document.getElementById('sEst');
-  e.className='estado '+(ab?'a':'c');
-  e.innerHTML='<span class="pulse" style="background:currentColor;box-shadow:none"></span>'+(ab?'Abierto ahora':'Cerrado ahora');
-  const av=document.getElementById('sAviso');
-  av.classList.toggle('hide',ab);av.textContent=CFG.cerrado||'';
   document.title=CFG.nombre+' · Mesa '+MESA;
 }
 
@@ -484,7 +470,7 @@ function menuLat(){
    '<button class="di" data-a="carta">📋 Ver la carta</button>'+
    '<button class="di" data-a="cart">🛒 Mi pedido · '+nItems()+'</button>'+
    '<button class="di" data-a="help">💬 Ayuda y soporte</button>'+
-   '<button class="di" data-a="info">📍 Horario y dirección</button>'+
+   '<button class="di" data-a="info">📍 Dirección y contacto</button>'+
    '<a class="di last" href="admin.html">Soy trabajador</a></div>');
   w.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{
     const a=b.dataset.a;w.remove();
@@ -502,8 +488,8 @@ function ayuda(){
 }
 function info(){
   capa('<div class="ov" data-x></div><div class="sheetw"><div class="sheet">'+
-   '<h3>'+esc(CFG.nombre)+'</h3><p>'+(abierto()?'Abierto ahora':'Cerrado ahora')+'</p>'+
-   '<div style="font-size:15px;line-height:2.1">🕐 '+esc(CFG.hora)+'<br>📍 '+esc(CFG.dir)+
+   '<h3>'+esc(CFG.nombre)+'</h3>'+
+   '<div style="font-size:15px;line-height:2.1">📍 '+esc(CFG.dir)+
    '<br>📞 +'+esc(CFG.tel)+'</div>'+
    '<div style="height:18px"></div><button class="b sec" data-x>Cerrar</button></div></div>');
 }
