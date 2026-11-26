@@ -22,7 +22,14 @@ import re
 import sys
 import urllib.request
 
-CANAL = 'https://t.me/s/eltoquecom2'
+# Canal oficial. OJO: @eltoquecom2 fue secuestrado en noviembre de 2026 y
+# ahora sirve una estafa de criptomonedas. Si algún día este deja de
+# publicar, hay que comprobar a mano cuál es el canal bueno antes de
+# cambiarlo aquí: este número acaba en la carta de la cafetería.
+CANAL = 'https://t.me/s/eltoquecom'
+
+# El canal tiene que parecerse a lo que esperamos antes de creerle un número.
+SEÑAS = ['mercado informal', 'eltoque']
 SB_URL = os.environ.get('SB_URL', '').rstrip('/')
 SB_KEY = os.environ.get('SB_KEY', '')
 TOKEN = os.environ.get('TOKEN_TASA', '')
@@ -72,6 +79,16 @@ def limpiar(s):
         return None
 
 
+def tasa_guardada():
+    """La tasa que la cafetería muestra ahora mismo, para comparar."""
+    try:
+        r = bajar(SB_URL + '/rest/v1/config?id=eq.1&select=datos', None, {
+            'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'User-Agent': NAVEGADOR})
+        return float(json.loads(r)[0]['datos'].get('tasa') or 0) or None
+    except Exception:
+        return None
+
+
 def main():
     if not (SB_URL and SB_KEY and TOKEN):
         sys.exit('Faltan SB_URL, SB_KEY o TOKEN_TASA en el entorno.')
@@ -82,6 +99,13 @@ def main():
         sys.exit(f'No se pudo leer el canal de Telegram: {e}')
 
     texto = texto_plano(html)
+
+    bajo = texto.lower()
+    if not all(s in bajo for s in SEÑAS):
+        print(texto[-800:])
+        sys.exit('El canal no parece el de elTOQUE. Puede haber cambiado de dueño: '
+                 'reviso a mano antes de tocar nada.')
+
     usd = buscar(texto, 'USD')
     mlc = buscar(texto, 'MLC')
 
@@ -92,6 +116,13 @@ def main():
 
     if not (50 <= usd <= 100000):
         sys.exit(f'La tasa leída ({usd}) está fuera de lo razonable. No se guarda.')
+
+    # Un salto enorme de un día para otro es casi seguro un error de lectura
+    # o una fuente manipulada. Mejor dejar la tasa vieja y que avise.
+    anterior = tasa_guardada()
+    if anterior and abs(usd - anterior) / anterior > 0.35:
+        sys.exit(f'La tasa pasaría de {anterior} a {usd} CUP, un salto del '
+                 f'{abs(usd - anterior) / anterior * 100:.0f} %. No se guarda sin revisar.')
 
     cuerpo = json.dumps({'p_token': TOKEN, 'p_usd': usd, 'p_mlc': mlc}).encode()
     try:
