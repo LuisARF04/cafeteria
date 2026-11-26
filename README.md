@@ -84,5 +84,19 @@ Los detalles, incluida la contrapartida (el panel ya no entra sin internet), est
 
 ## Publicar
 
-Funciona en cualquier hosting de archivos estáticos. Con GitHub Pages:
-Settings → Pages → Branch `main`, carpeta `/ (root)`.
+Funciona en cualquier hosting de archivos estáticos.
+
+**Cloudflare Pages** (recomendado). Conecta este repo desde el panel de Cloudflare:
+Workers & Pages → Create → Pages → Connect to Git. Deja el framework en *None* y los
+campos de build vacíos: no hay nada que compilar. Cada `git push` publica solo.
+
+Los archivos `_redirects` y `_headers` son suyos: el primero convierte `/mesa/4` en
+`/?mesa=4` en el servidor, el segundo pone la caché de los `assets/` para que la segunda
+visita no vuelva a descargarlos.
+
+Su plan gratuito permite uso comercial y no mide el ancho de banda estático. GitHub Pages
+y el plan Hobby de Vercel prohíben en sus términos usar el servicio para un negocio, así
+que no sirven para una cafetería que cobra.
+
+**GitHub Pages** (solo para probar). Settings → Pages → Branch `main`, carpeta `/ (root)`.
+Ahí `_redirects` y `_headers` se ignoran y de `/mesa/4` se encarga `404.html`.

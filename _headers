@@ -1,0 +1,23 @@
+# Cloudflare Pages — cabeceras
+#
+# Lo importante aquí es la caché: con internet lento, que el teléfono
+# no vuelva a bajar el CSS y el JS en cada visita es la diferencia
+# entre abrir al instante o esperar.
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), interest-cohort=()
+
+# Las páginas se revalidan siempre: así un arreglo llega enseguida.
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/admin.html
+  Cache-Control: public, max-age=0, must-revalidate
+  X-Robots-Tag: noindex, nofollow
+
+# CSS y JS: sirven de la caché durante una hora y después se refrescan
+# por detrás, sin hacer esperar a nadie.
+/assets/*
+  Cache-Control: public, max-age=3600, stale-while-revalidate=604800

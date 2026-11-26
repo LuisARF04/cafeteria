@@ -1,0 +1,13 @@
+# Cloudflare Pages — reglas de redirección
+#
+# El QR de cada mesa apunta a /mesa/4. Aquí se convierte en /?mesa=4,
+# que es lo que la carta sabe leer. En GitHub Pages esto lo hacía
+# 404.html; Cloudflare lo resuelve en el servidor, sin cargar una
+# página intermedia.
+
+/mesa/:numero    /?mesa=:numero    302
+/Mesa/:numero    /?mesa=:numero    302
+/mesa-:numero    /?mesa=:numero    302
+
+# Atajo cómodo para el personal
+/panel           /admin.html       302
