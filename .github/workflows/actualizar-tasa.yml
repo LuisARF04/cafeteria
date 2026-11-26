@@ -1,0 +1,22 @@
+name: Actualizar la tasa del dólar
+
+# Cada tres horas basta: El Toque publica una vez al día y así se gastan
+# menos minutos de Actions. También se puede lanzar a mano desde la
+# pestaña Actions con "Run workflow".
+on:
+  schedule:
+    - cron: '17 */3 * * *'
+  workflow_dispatch:
+
+jobs:
+  tasa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Leer El Toque y guardar la tasa en Supabase
+        env:
+          SB_URL: https://wfzlldsdontjmikhwsod.supabase.co
+          SB_KEY: sb_publishable_syo-t3i5oZKC28nJWKk2OQ_KAUM3Lkt
+          TOKEN_TASA: ${{ secrets.TOKEN_TASA }}
+        run: python3 scripts/leer_tasa.py

@@ -7,8 +7,8 @@
 <meta name="description" content="Carta y pedidos desde la mesa">
 <title>Carta</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>">
-<link rel="stylesheet" href="assets/base.css?v=2">
-<link rel="stylesheet" href="assets/cliente.css?v=2">
+<link rel="stylesheet" href="assets/base.css?v=3">
+<link rel="stylesheet" href="assets/cliente.css?v=3">
 </head>
 <body>
 
@@ -26,6 +26,7 @@
   <div class="shop">
     <h1 id="sName">&nbsp;</h1>
     <div class="meta"><span id="sDir"></span></div>
+    <p class="tasa hide" id="sTasa"></p>
   </div>
 
   <div class="tools">
@@ -82,8 +83,8 @@
 
 <div id="capas"></div>
 
-<script src="assets/config.js?v=2"></script>
-<script src="assets/api.js?v=2"></script>
+<script src="assets/config.js?v=3"></script>
+<script src="assets/api.js?v=3"></script>
 <script>
 /* ═══════════ MESA DESDE EL QR ═══════════ */
 function leerMesa(){
@@ -147,7 +148,23 @@ function pintaTienda(){
   document.getElementById('hMesa').textContent='Estás en la Mesa '+MESA;
   document.getElementById('sName').textContent=CFG.nombre;
   document.getElementById('sDir').textContent=CFG.dir||'';
+  pintaTasa();
   document.title=CFG.nombre+' · Mesa '+MESA;
+}
+
+/* La tasa la actualiza sola una tarea cada tres horas leyendo El Toque.
+   Se dice de cuándo es, para que nadie la tome por buena a ciegas. */
+function pintaTasa(){
+  const t=document.getElementById('sTasa');
+  if(!(CFG.tasa>0)){t.classList.add('hide');return}
+  const f=CFG.tasaFecha?new Date(CFG.tasaFecha):null;
+  const dias=f?(Date.now()-f.getTime())/86400000:null;
+  const cuando=f?f.toLocaleDateString('es-CU',{day:'numeric',month:'short'}):null;
+  t.className='tasa'+(dias!==null&&dias>2?' vieja':'');
+  t.innerHTML='Los precios son en CUP. Referencia: 1 '+esc(CFG.moneda2||'USD')+' = '+
+    Math.round(CFG.tasa).toLocaleString('es-CU')+' CUP'+
+    (cuando?' · tasa del '+cuando:'')+
+    (dias!==null&&dias>2?' · lleva días sin actualizarse':'');
 }
 
 /* ═══════════ CARTA ═══════════ */
