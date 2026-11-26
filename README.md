@@ -94,6 +94,11 @@ Los archivos `_redirects` y `_headers` son suyos: el primero convierte `/mesa/4`
 `/?mesa=4` en el servidor, el segundo pone la caché de los `assets/` para que la segunda
 visita no vuelva a descargarlos.
 
+> **Al cambiar un archivo de `assets/`, sube el número de versión.** El HTML los pide
+> como `assets/cliente.css?v=2`; si no cambias ese número, los teléfonos seguirán usando
+> la copia vieja durante días y verás la página rota, con el HTML nuevo y los estilos
+> antiguos. Busca `?v=` en `index.html` y `admin.html` y sube el número en todos.
+
 Su plan gratuito permite uso comercial y no mide el ancho de banda estático. GitHub Pages
 y el plan Hobby de Vercel prohíben en sus términos usar el servicio para un negocio, así
 que no sirven para una cafetería que cobra.

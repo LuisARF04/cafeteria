@@ -7,8 +7,8 @@
 <meta name="description" content="Carta y pedidos desde la mesa">
 <title>Carta</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>">
-<link rel="stylesheet" href="assets/base.css">
-<link rel="stylesheet" href="assets/cliente.css">
+<link rel="stylesheet" href="assets/base.css?v=2">
+<link rel="stylesheet" href="assets/cliente.css?v=2">
 </head>
 <body>
 
@@ -82,8 +82,8 @@
 
 <div id="capas"></div>
 
-<script src="assets/config.js"></script>
-<script src="assets/api.js"></script>
+<script src="assets/config.js?v=2"></script>
+<script src="assets/api.js?v=2"></script>
 <script>
 /* ═══════════ MESA DESDE EL QR ═══════════ */
 function leerMesa(){
@@ -297,22 +297,23 @@ function pintaMios(){
       'Lo que pidas aparecerá aquí con su estado.</div>';
     return;
   }
-  c.innerHTML=MIOS.map(p=>{
+  c.innerHTML='<div class="mios">'+MIOS.map(p=>{
     const i=PASOS.indexOf(p.estado), [titulo,nota]=TEXTO[p.estado]||TEXTO.nuevo;
     const lineas=(p.items||[]).map(it=>
-      '<div class="sum"><span>'+it.q+'× '+esc(it.n)+'</span><span>'+cup(it.q*it.p)+'</span></div>').join('');
-    const ctas=p.dividido?(p.cuentas||[]).map(ct=>
-      '<div class="sum" style="color:var(--ink);font-weight:600"><span>'+esc(ct.nombre)+'</span>'+
-      '<span>'+cup(ct.total)+'</span></div>').join(''):'';
+      '<li><span class="qn">'+it.q+'×</span><span class="nm">'+esc(it.n)+'</span>'+
+      '<span class="pz">'+cup(it.q*it.p)+'</span></li>').join('');
+    const ctas=p.dividido&&(p.cuentas||[]).length
+      ?'<div class="mdiv">Dividido en '+p.cuentas.length+' cuentas</div>'+
+       p.cuentas.map(ct=>'<div class="mcta"><span>'+esc(ct.nombre)+'</span><b>'+cup(ct.total)+'</b></div>').join('')
+      :'';
     return '<article class="mio'+(p.estado==='listo'?' listo':'')+'">'+
-      '<div class="mh"><b>'+titulo+'</b><span>'+hhmm(p.creado)+'</span></div>'+
+      '<div class="mio-h"><h3>'+titulo+'</h3><time>'+hhmm(p.creado)+'</time></div>'+
       '<div class="tkp">'+PASOS.map((_,k)=>'<i class="'+(k<=i?'on':'')+'"></i>').join('')+'</div>'+
-      '<div class="mn">'+nota+'</div>'+
-      '<div class="ml">'+lineas+
-        (ctas?'<div class="mdiv">Dividido en '+(p.cuentas||[]).length+' cuentas</div>'+ctas:'')+
-        '<div class="sum big" style="font-size:18px;padding-top:8px"><span>Total</span><span>'+
-        cup(p.total)+'</span></div></div></article>';
-  }).join('');
+      '<p class="mn">'+nota+'</p>'+
+      '<ul class="ml">'+lineas+'</ul>'+ctas+
+      '<div class="mt"><span>Total</span><b>'+cup(p.total)+'</b></div>'+
+    '</article>';
+  }).join('')+'</div>';
 }
 setInterval(mirarPedido,20000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')mirarPedido()});

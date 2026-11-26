@@ -17,7 +17,9 @@
   Cache-Control: public, max-age=0, must-revalidate
   X-Robots-Tag: noindex, nofollow
 
-# CSS y JS: sirven de la caché durante una hora y después se refrescan
-# por detrás, sin hacer esperar a nadie.
+# CSS y JS: se piden con ?v=N desde el HTML, así que una versión concreta
+# nunca cambia y se puede guardar mucho tiempo. Al subir un cambio se sube
+# el número de versión en index.html y admin.html, y el teléfono baja el
+# archivo nuevo de inmediato en vez de esperar a que caduque la caché.
 /assets/*
-  Cache-Control: public, max-age=3600, stale-while-revalidate=604800
+  Cache-Control: public, max-age=604800
